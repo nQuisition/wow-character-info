@@ -1,0 +1,32 @@
+{
+  //...
+  "talents": [{
+    "selected": true,   //only there for active spec
+    "talents": [{       //tiers are not in order
+      "tier": 1,
+      "column": 0,
+      "spell": {
+        "id": 212653,
+        "name": "Shimmer",
+        "icon": "spell_arcane_massdispel",  //https://render-eu.worldofwarcraft.com/icons/56/<name>.jpg
+      }
+    },
+    //...
+    //all talents in this spec
+    ],
+    "spec": {
+      "name": "Frost",
+      "role": "DPS",
+      "order": 2,
+      "backgroundImage": "bg-mage-frost", //don't know what this is for
+      "icon": "spell_frost_frostbolt02",  //https://render-eu.worldofwarcraft.com/icons/56/<name>.jpg
+    },
+  },
+  //...
+  //all other specs
+  {
+    "talents": [],      //this happens too, just check if the "spec" field exists
+    "calcTalent": "",
+    "calcSpec": ""
+  }],
+}

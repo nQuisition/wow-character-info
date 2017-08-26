@@ -1,0 +1,148 @@
+{
+  //...
+  "items": {
+    "averageItemLevel": 932,
+    "averageItemLevelEquipped": 923,
+    "head": {
+      "id": 147147,
+      "name": "Crown of the Arcane Tempest",
+      "icon": "inv_helm_cloth_raidmage_r_01",     //https://render-eu.worldofwarcraft.com/icons/56/<name>.jpg
+      "quality": 4,
+      "itemLevel": 915,
+      "tooltipParams": {
+        "set": [147145, 147147, 147149, 147146],
+        "transmogItem": 132863,
+        "timewalkerLevel": 110
+      },
+      "bonusLists": [3562, 1497, 3528]
+    },
+    "neck": {
+      //...
+      "tooltipParams": {
+        "gem0": 130219,
+        "enchant": 5439,
+        "timewalkerLevel": 110
+      }
+      //...
+    },
+    "shoulder": {
+      //...
+      "tooltipParams": {
+        "enchant": 5883,
+        "set": [138321, 138315],
+        "transmogItem": 65213,
+        "timewalkerLevel": 110
+      }
+      //...
+    },
+    "back": {//...},
+    "chest": {//...},
+    "wrist": {//...},
+    "hands": {//...},
+    "waist": {//...},
+    "legs": {//...},
+    "feet": {//...},
+    "finger1": {//...},
+    "finger2": {//...},
+    "trinket1": {//...},
+    "trinket2": {//...},
+    "mainHand": {
+      //...
+      "tooltipParams": {
+        "gem0": 147093,   //relics are here, but no bonus ids
+        "gem1": 137303,
+        "gem2": 147092,
+        "timewalkerLevel": 110
+      },
+      //...
+      "context": "scenario-normal",
+      "bonusLists": [731, 1534, 1539, 1534],
+      "artifactId": 53,
+      "displayInfoId": 154145,
+      "artifactAppearanceId": 885,
+      "artifactTraits": [{
+        "id": 785,
+        "rank": 5
+      }, {
+        "id": 789,
+        "rank": 4
+      }, {
+        "id": 1296,
+        "rank": 1
+      }, {
+        "id": 786,
+        "rank": 4
+      }, {
+        "id": 794,
+        "rank": 1
+      }, {
+        "id": 791,
+        "rank": 4
+      }, {
+        "id": 788,
+        "rank": 4
+      }, {
+        "id": 798,
+        "rank": 1
+      }, {
+        "id": 797,
+        "rank": 1
+      }, {
+        "id": 792,
+        "rank": 4
+      }, {
+        "id": 796,
+        "rank": 1
+      }, {
+        "id": 787,
+        "rank": 4
+      }, {
+        "id": 784,
+        "rank": 5
+      }, {
+        "id": 795,
+        "rank": 1
+      }, {
+        "id": 793,
+        "rank": 1
+      }, {
+        "id": 790,
+        "rank": 5
+      }, {
+        "id": 1373,
+        "rank": 1
+      }, {
+        "id": 1641,
+        "rank": 1
+      }, {
+        "id": 1537,
+        "rank": 4
+      }, {
+        "id": 1538,
+        "rank": 1
+      }, {
+        "id": 1539,
+        "rank": 1
+      }, {
+        "id": 1540,
+        "rank": 5
+      }],
+      "relics": [{
+        "socket": 0,
+        "itemId": 147093,
+        "context": 5,
+        "bonusLists": [3562, 1497, 3528]
+      }, {
+        "socket": 1,
+        "itemId": 137303,
+        "context": 16,
+        "bonusLists": [3536, 1582, 3337]
+      }, {
+        "socket": 2,
+        "itemId": 147092,
+        "context": 5,
+        "bonusLists": [3562, 1497, 3528]
+      }]
+    }
+  }
+}

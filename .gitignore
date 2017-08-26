@@ -1,0 +1,7 @@
+*.log
+/node_modules/*
+/dist/*
+/media/*
+/server/config/*
+/src/js/config/*
+/src/js/stores/*
