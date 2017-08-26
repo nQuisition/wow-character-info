@@ -8,11 +8,11 @@ CREATE TABLE `character` (
 	`gender` int NOT NULL,
 	`thumbnail` varchar(255) NOT NULL,
 	`achievementPoints` int NOT NULL,
-	`lastModified` TIMESTAMP NOT NULL,
+	`lastModified` bigint NOT NULL,
 	`activeSpec` int NOT NULL,
 	`ilvl` int NOT NULL,
 	`ilvle` int NOT NULL,
-	`lastUpdated` TIMESTAMP NOT NULL,
+	`lastUpdated` bigint NOT NULL,
 	PRIMARY KEY (`id`)
 );
 
@@ -28,6 +28,8 @@ CREATE TABLE `class` (
 CREATE TABLE `race` (
 	`id` int NOT NULL,
 	`name` varchar(32) NOT NULL,
+	`maleIcon` varchar(255) NOT NULL,
+	`femaleIcon` varchar(255) NOT NULL,
 	PRIMARY KEY (`id`)
 );
 

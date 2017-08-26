@@ -1,8 +1,8 @@
 <?php
-include_once '../config/config.php';
-use \Config\Config;
-
 namespace Util;
+
+include_once __DIR__.'/../config/config.php';
+use \Config\Config, \PDO, \PDOException;
 
 class DBObject {
   private static $dbobject = null;
@@ -13,10 +13,10 @@ class DBObject {
   }
 
   public static function getDBObject() {
-    if(!isset(self::dbobject)) {
-      self::dbobject = new DBObject();
+    if(!isset(self::$dbobject)) {
+      self::$dbobject = new DBObject();
     }
-    return self::dbobject;
+    return self::$dbobject;
   }
 
   public function establishConnection($reconnect=false) {
@@ -37,6 +37,10 @@ class DBObject {
 
   public function prepareStatement($statement) {
     return $this->conn->prepare($statement);
+  }
+
+  public function lastInsertId() {
+    return $this->conn->lastInsertId();
   }
 
   public function closeConnection() {

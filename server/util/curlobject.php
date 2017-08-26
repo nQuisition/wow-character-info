@@ -1,8 +1,8 @@
 <?php
-include_once '../config/config.php';
-use \Config\Config;
-
 namespace Util;
+
+include_once __DIR__.'/../config/config.php';
+use \Config\Config;
 
 class CurlObject {
   private static $curlobject = null;
@@ -13,10 +13,10 @@ class CurlObject {
   }
 
   public static function getCurlObject() {
-    if(!isset(self::curlobject)) {
-      self::curlobject = new CurlObject();
+    if(!isset(self::$curlobject)) {
+      self::$curlobject = new CurlObject();
     }
-    return self::curlobject;
+    return self::$curlobject;
   }
 
   public function init($reconnect=false) {
