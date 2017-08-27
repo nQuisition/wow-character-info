@@ -1,4 +1,5 @@
 *.log
+/server/test.php
 /node_modules/*
 /dist/*
 /media/*

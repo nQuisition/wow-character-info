@@ -8,10 +8,8 @@ import CharacterInfo from '../pages/characterinfo'
 
 class MainRouter extends React.Component {
   fetchCharacterInfo(nextState) {
-    /*const name = nextState.params.name;
-    const name2 = nextState.params.name2;
-    console.log("Fetch! ", name);
-    DataActions.changePlayer(name, name2);*/
+    //const name = nextState.params.name;
+    //DataActions.changePlayer(name, name2);
   }
 
   render () {
@@ -19,7 +17,7 @@ class MainRouter extends React.Component {
       <Router history={hashHistory}>
         <Route path="/" component={Layout}>
           <IndexRoute component={IndexC}></IndexRoute>
-          <Route path="player/:name(/:name2)" component={CharacterInfo} onEnter={this.fetchCharacterInfo}></Route>
+          <Route path="character/:name" component={CharacterInfo} onEnter={this.fetchCharacterInfo}></Route>
         </Route>
       </Router>
     );

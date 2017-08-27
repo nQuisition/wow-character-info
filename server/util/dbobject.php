@@ -7,6 +7,7 @@ use \Config\Config, \PDO, \PDOException;
 class DBObject {
   private static $dbobject = null;
   private $conn = null;
+  private $inTransaction = false;
 
   private function __construct() {
 
@@ -41,6 +42,31 @@ class DBObject {
 
   public function lastInsertId() {
     return $this->conn->lastInsertId();
+  }
+
+  public function beginTransaction() {
+    if($this->inTransaction)
+      return false;
+    $result = $this->conn->beginTransaction();
+    if($result)
+      $this->inTransaction = true;
+    return $result;
+  }
+
+  public function commit() {
+    if(!$this->inTransaction)
+      return false;
+    $result = $this->conn->commit();
+    $this->inTransaction = false;
+    return $result;
+  }
+
+  public function rollBack() {
+    if(!$this->inTransaction)
+      return false;
+    $result = $this->conn->rollBack();
+    $this->inTransaction = false;
+    return $result;
   }
 
   public function closeConnection() {
