@@ -12,7 +12,7 @@ export function getIconUrl(context, icon, small=false) {
 export function getWowheadLink(context, id) {
   if(context === 'talent' || context === 'talents')
     context = 'spell';
-  return 'http://www.wowhead.com/' + context + '=' + id;
+  return '//www.wowhead.com/' + context + '=' + id;
 }
 
 export function getRelStringForItem(item) {

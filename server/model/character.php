@@ -11,9 +11,10 @@ use \Util\DBObject, \Util\CurlObject, \Util\Cacher, \Util\Clocker, \PDO, \PDOExc
 class Character {
   private $attributes = array();
   private $items = array();
+  private $specs = array();
   private static $clocker = null;
   private static $db = null;
-  private static $keys = array('id', 'name', 'realm', 'region', 'className', 'classColor', 'classIcon', 'raceName',
+  private static $keys = array('id', 'name', 'realm', 'region', 'class', 'className', 'classColor', 'classIcon', 'raceName',
     'gender', 'thumbnail', 'achievementPoints', 'lastModified', 'specName', 'specIcon', 'ilvl', 'ilvle', 'lastUpdated');
 
   private function __construct($attrs) {
@@ -26,6 +27,10 @@ class Character {
     return $this->attributes['id'];
   }
 
+  public function getClassId() {
+    return $this->attributes['class'];
+  }
+
   public function getBaseJson() {
     return json_encode($this->attributes);
   }
@@ -35,12 +40,19 @@ class Character {
     if(in_array('items', $params)) {
       $base['items'] = $this->items;
     }
+    if(in_array('specs', $params)) {
+      $base['specs'] = $this->specs;
+    }
 
     return json_encode($base);
   }
 
   public function setItems($items) {
     $this->items = $items;
+  }
+
+  public function setSpecs($specs) {
+    $this->specs = $specs;
   }
 
   public static function fetchCharacter($name, $realm, $region) {
@@ -57,7 +69,9 @@ class Character {
     }
     if($result != null) {
       $charId = $result->getId();
+      $classId = $result->getClassId();
       $result->setItems(self::getCharacterItems($charId));
+      $result->setSpecs(self::getCharacterSpecs($charId, $classId));
     }
     self::$db->closeConnection();
     return $result;
@@ -380,6 +394,42 @@ class Character {
         }
       }
       $result[] = $item;
+    }
+
+    return $result;
+  }
+
+  private static function getCharacterSpecs($id, $class) {
+    $specStatement = self::$db->prepareStatement(
+      "SELECT id, name, role, backgroundImage, icon
+      FROM spec WHERE class=:class ORDER BY `order` ASC;"
+    );
+    $specStatement->execute(array(':class' => $class));
+    $result = $specStatement->fetchAll(PDO::FETCH_ASSOC);
+    $specIndices = array();
+    for($i = 0; $i < count($result); $i++) {
+      $result[$i]['talents'] = array();
+      $specIndices[$result[$i]['id']] = $i;
+    }
+    $talentStatement = self::$db->prepareStatement(
+      "SELECT tal.name as name, tal.tier as tier, tal.`column` as `column`, tal.spellid as spellid,
+      tal.icon as icon, sp.id as specId
+      FROM character_talent ct
+      INNER JOIN talent tal ON ct.talent=tal.id
+      INNER JOIN spec sp ON tal.spec=sp.id
+      WHERE ct.character=:id
+      ORDER BY sp.`order` ASC, tier ASC;"
+    );
+    $talentStatement->execute(array(':id' => $id));
+    $talents = $talentStatement->fetchAll(PDO::FETCH_ASSOC);
+    foreach($talents as $talent) {
+      $specId = $talent['specId'];
+      unset($talent['specId']);
+      $result[$specIndices[$specId]]['talents'][] = $talent;
+    }
+    //TODO doesn't work?
+    foreach ($result as $value) {
+      unset($value['id']);
     }
 
     return $result;

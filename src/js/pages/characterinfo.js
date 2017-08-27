@@ -30,6 +30,7 @@ class CharacterInfo extends React.Component {
     }
     const character = this.props.character;
     const charItems = character.items.map((e,k) => <ItemFrame item={e} key={k}/>);
+    const charSpecs = character.specs.map((e,k) => <SpecFrame spec={e} selected={e.name===character.specName} key={k}/>);
 
     return(
       <div>
@@ -47,6 +48,9 @@ class CharacterInfo extends React.Component {
           <img src={Util.getIconUrl('spec', character.specIcon)}/>
           {character.specName}
           <br/>
+        </div>
+        <div>
+          {charSpecs}
         </div>
         <div>
           {charItems}
@@ -77,6 +81,44 @@ class ItemFrame extends React.Component {
           {item.name} ({item.ilvl})
         </a>
       </div>
+    );
+  }
+}
+
+class SpecFrame  extends React.Component {
+  render() {
+    const style = {
+      margin: '10px',
+      padding: '15px',
+      width:'50%',
+      border: '1px solid ' + (this.props.selected?'green':'gray'),
+      display: 'flex',
+      justifyContent: 'space-between'
+    }
+    const talents = this.props.spec.talents.map((e,k) => <TalentFrame talent={e} key={k}/>);
+
+    return(
+      <div>
+        <div style={style}>
+          {talents}
+        </div>
+      </div>
+    )
+  }
+}
+
+class TalentFrame extends React.Component {
+  render() {
+    const talent = this.props.talent;
+    const styleImg = {
+      width: '32px',
+      height: '32px'
+    }
+
+    return (
+      <a href={Util.getWowheadLink('talent', talent.spellid)} target='_blank'>
+        <img src={Util.getIconUrl('talent', talent.icon)} style={styleImg}/>
+      </a>
     );
   }
 }
