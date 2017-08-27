@@ -11,12 +11,16 @@ class Clocker {
   }
 
   public function clock($message) {
+    if(!defined('_DEBUG'))
+      return;
     $diff = microtime(true)-$this->lastTime;
     echo $message.'. Elapsed: '.$diff."s\n";
     $this->lastTime = microtime(true);
   }
 
   public function getTotal() {
+    if(!defined('_DEBUG'))
+      return;
     $diff = microtime(true)-$this->startTime;
     echo 'Total time elapsed: '.$diff."s\n";
   }

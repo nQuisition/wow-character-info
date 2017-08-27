@@ -10,6 +10,7 @@ use \Util\DBObject, \Util\CurlObject, \Util\Cacher, \Util\Clocker, \PDO, \PDOExc
 
 class Character {
   private $attributes = array();
+  private $items = array();
   private static $clocker = null;
   private static $db = null;
   private static $keys = array('id', 'name', 'realm', 'region', 'className', 'classColor', 'classIcon', 'raceName',
@@ -21,21 +22,42 @@ class Character {
     }
   }
 
+  public function getId() {
+    return $this->attributes['id'];
+  }
+
   public function getBaseJson() {
     return json_encode($this->attributes);
   }
 
+  public function getJson($params) {
+    $base = $this->attributes;
+    if(in_array('items', $params)) {
+      $base['items'] = $this->items;
+    }
+
+    return json_encode($base);
+  }
+
+  public function setItems($items) {
+    $this->items = $items;
+  }
+
   public static function fetchCharacter($name, $realm, $region) {
-    //self::$clocker = new Clocker();
+    self::$clocker = new Clocker();
     self::$db = DBObject::getDBObject();
     self::$db->establishConnection();
-    //self::$clocker->clock("Connection to db established");
+    self::$clocker->clock("Connection to db established");
     $result = null;
     if ($charInfo = self::getCheckCharacter($name, $realm, $region)) {
       $result = new Character($charInfo);
     } else {
-      //self::$clocker->clock("GotCheckeded character info");
+      self::$clocker->clock("GotCheckeded character info");
       $result = self::createCharacter($name, $realm, $region);
+    }
+    if($result != null) {
+      $charId = $result->getId();
+      $result->setItems(self::getCharacterItems($charId));
     }
     self::$db->closeConnection();
     return $result;
@@ -44,10 +66,10 @@ class Character {
   private static function createCharacter($name, $realm, $region) {
     $curl = CurlObject::getCurlObject();
     $curl->init();
-    //self::$clocker->clock("Curl initialized");
+    self::$clocker->clock("Curl initialized");
     $result = null;
     if($json = $curl->curlCharacter($name, $realm, $region)) {
-      //self::$clocker->clock("Curling complete");
+      self::$clocker->clock("Curling complete");
       if(!(isset($json['status']) && $json['status'] == 'nok')) {
         self::$db->beginTransaction();
 
@@ -79,15 +101,22 @@ class Character {
         $insertStatement->bindParam(':ilvle', $ilvle);
         $insertStatement->bindParam(':lastUpdated', $lastUpdated);
         $insertStatement->execute();
-        //self::$clocker->clock("Inserted character");
+        self::$clocker->clock("Inserted character");
         $charId = self::$db->lastInsertId();
         self::insertTalents(array_slice($talentIds, 0, count($talentIds)-1), $charId);
-        //self::$clocker->clock("Inserted talents");
+        self::$clocker->clock("Inserted talents");
+
+        //self::$clocker = new Clocker();
+        $itemList = self::getItems($json);
+        self::$clocker->clock("Got items");
+        self::insertItems($itemList, $charId);
+        self::$clocker->clock("Inserted items");
+
         $result = new Character(self::getCharacterById($charId));
 
         self::$db->commit();
-        //self::$clocker->clock("Everything done");
-        //self::$clocker->getTotal();
+        self::$clocker->clock("Everything done");
+        self::$clocker->getTotal();
       }
     }
     $curl->closeConnection();
@@ -95,7 +124,58 @@ class Character {
   }
 
   private static function insertItems($itemList, $charId) {
+    $itemStatement = self::$db->prepareStatement(
+      "INSERT INTO character_item (`character`, item, quality, ilvl, setList, transmogItem, bonusList, enchant)
+      VALUES (:character, :item, :quality, :ilvl, :setList, :transmogItem, :bonusList, :enchant);"
+    );
 
+    $gemStatement = self::$db->prepareStatement(
+      "INSERT INTO character_item_gem (character_item, gemid)
+      VALUES (:character_item, :gemid);"
+    );
+    $gemStatement->bindParam(':character_item', $charItemId);
+    $gemStatement->bindParam(':gemid', $gemId);
+
+    $relicStatement = self::$db->prepareStatement(
+      "INSERT INTO character_item_relic (character_item, relicid, bonusList)
+      VALUES (:character_item, :relicid, :bonusList);"
+    );
+    $relicStatement->bindParam(':character_item', $charItemId);
+    $relicStatement->bindParam(':relicid', $relicId);
+    $relicStatement->bindParam(':bonusList', $relicBonusList);
+
+    $traitStatement = self::$db->prepareStatement(
+      "INSERT INTO character_item_trait (character_item, traitid, rank)
+      VALUES (:character_item, :traitid, :rank);"
+    );
+    $traitStatement->bindParam(':character_item', $charItemId);
+    $traitStatement->bindParam(':traitid', $traitId);
+    $traitStatement->bindParam(':rank', $traitRank);
+
+    foreach($itemList as $item) {
+      $attrs = $item->getBaseAttributes();
+      $attrs[':character'] = $charId;
+      $itemStatement->execute($attrs);
+      $gems = $item->getGems();
+      $relics = $item->getRelics();
+      $traits = $item->getTraits();
+      if(count($gems)>0 || count($relics)>0 || count($traits)>0) {
+        $charItemId = self::$db->lastInsertId();
+        foreach ($gems as $gemId) {
+          $gemStatement->execute();
+        }
+        foreach ($relics as $relic) {
+          $relicId = $relic['itemId'];
+          $relicBonusList = isset($relic['bonusLists']) ? join(':', $relic['bonusLists']) : null;
+          $relicStatement->execute();
+        }
+        foreach ($traits as $trait) {
+          $traitId = $trait['id'];
+          $traitRank = $trait['rank'];
+          $traitStatement->execute();
+        }
+      }
+    }
   }
 
   private static function insertTalents($talentIds, $charId) {
@@ -115,10 +195,10 @@ class Character {
     $result = array();
     $items = $json['items'];
     $itemSlotStatement = self::$db->prepareStatement(
-      "SELECT id, name FROM itemslots;"
+      "SELECT id, name FROM itemslot;"
     );
     $itemSlotStatement->execute();
-    $itemSlots = $itemSlotStatement->fetchAll();
+    $itemSlots = $itemSlotStatement->fetchAll(PDO::FETCH_ASSOC);
 
     $insertStatement = self::$db->prepareStatement(
       "INSERT IGNORE INTO item (id, name, icon, slot)
@@ -138,6 +218,7 @@ class Character {
       $itemId = $item['id'];
       $itemName = $item['name'];
       $itemIcon = $item['icon'];
+      Cacher::cacheIcon('item', $itemIcon);
       $insertStatement->execute();
       $characterItem = new CharacterItem($item);
       $result[] = $characterItem;
@@ -150,6 +231,25 @@ class Character {
     $result = array();
     $activeSpecId = -1;
     $talents = $json['talents'];
+
+    $checkStatement = self::$db->prepareStatement(
+      "SELECT id FROM talent WHERE spec=:spec AND tier=:tier AND `column`=:column;"
+    );
+    $checkStatement->bindParam(':spec', $specId);
+    $checkStatement->bindParam(':tier', $tier);
+    $checkStatement->bindParam(':column', $column);
+
+    $insertStatement = self::$db->prepareStatement(
+      "INSERT INTO talent (name, tier, `column`, spellid, icon, spec)
+      VALUES (:name, :tier, :column, :spellid, :icon, :spec);"
+    );
+    $insertStatement->bindParam(':name', $talName);
+    $insertStatement->bindParam(':tier', $talTier);
+    $insertStatement->bindParam(':column', $talColumn);
+    $insertStatement->bindParam(':spellid', $talSpellid);
+    $insertStatement->bindParam(':icon', $talIcon);
+    $insertStatement->bindParam(':spec', $specId);
+
     foreach($talents as $talentSet) {
       if(!isset($talentSet['spec']))
         continue;
@@ -159,24 +259,6 @@ class Character {
         $activeSpecId = $specId;
       }
       $talentArray = $talentSet['talents'];
-
-      $checkStatement = self::$db->prepareStatement(
-        "SELECT id FROM talent WHERE spec=:spec AND tier=:tier AND `column`=:column;"
-      );
-      $checkStatement->bindParam(':spec', $specId);
-      $checkStatement->bindParam(':tier', $tier);
-      $checkStatement->bindParam(':column', $column);
-
-      $insertStatement = self::$db->prepareStatement(
-        "INSERT INTO talent (name, tier, `column`, spellid, icon, spec)
-        VALUES (:name, :tier, :column, :spellid, :icon, :spec);"
-      );
-      $insertStatement->bindParam(':name', $talName);
-      $insertStatement->bindParam(':tier', $talTier);
-      $insertStatement->bindParam(':column', $talColumn);
-      $insertStatement->bindParam(':spellid', $talSpellid);
-      $insertStatement->bindParam(':icon', $talIcon);
-      $insertStatement->bindParam(':spec', $specId);
 
       foreach($talentArray as $talent) {
         $tier = $talent['tier'];
@@ -262,10 +344,44 @@ class Character {
     if(!$checkStatement->execute()) {
       return false;
     }
-    return($checkStatement->fetch(PDO::FETCH_ASSOC));
+    $char = $checkStatement->fetch(PDO::FETCH_ASSOC);
+    $char['thumbnail'] = Cacher::getCharacterThumbnailUrl($char['thumbnail']);
+    return($char);
   }
 
-  public function vardump() {
-    var_dump($this->attributes);
+  private static function getCharacterItems($id) {
+    $itemStatement = self::$db->prepareStatement(
+      "SELECT chit.id AS chitId, it.id AS id, it.name AS name, it.icon AS icon, isl.id AS slotNum, isl.name AS slot, iq.name AS quality, iq.color AS qualityColor,
+      chit.ilvl AS ilvl, chit.setList AS setList, chit.transmogItem AS transmogItem, chit.bonusList AS bonusList, chit.enchant AS enchant
+      FROM character_item chit
+      INNER JOIN item it ON chit.item=it.id
+      INNER JOIN itemslot isl ON it.slot=isl.id
+      INNER JOIN itemquality iq ON chit.quality=iq.id
+      WHERE chit.`character`=:id ORDER BY slotNum ASC;"
+    );
+    $gemStatement = self::$db->prepareStatement(
+      "SELECT cig.character_item AS chitId, cig.gemid as gemId
+      FROM character_item chit
+      INNER JOIN character_item_gem cig ON cig.character_item=chit.id
+      WHERE chit.`character`=:id;"
+    );
+    $itemStatement->execute(array(':id' => $id));
+    $items = $itemStatement->fetchAll(PDO::FETCH_ASSOC);
+    $gemStatement->execute(array(':id' => $id));
+    $gems = $gemStatement->fetchAll(PDO::FETCH_ASSOC);
+    $result = array();
+    foreach($items as $item) {
+      $chitId = $item['chitId'];
+      unset($item['chitId']);
+      $item['gems'] = array();
+      foreach($gems as $gem) {
+        if($gem['chitId'] == $chitId) {
+          $item['gems'][] = $gem['gemId'];
+        }
+      }
+      $result[] = $item;
+    }
+
+    return $result;
   }
 }

@@ -14,5 +14,5 @@ export function fetchCharacter(characterName) {
 }
 
 function getQueryURL(characterName) {
-  return 'http://api.illusions-guild.com/wow/character.php?action=base&name=' + characterName + '&realm=Draenor&region=EU';
+  return 'http://api.illusions-guild.com/wow/character.php?action=items&name=' + characterName + '&realm=Draenor&region=EU';
 }

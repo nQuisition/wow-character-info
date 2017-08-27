@@ -13,14 +13,27 @@ class CharacterItem {
   );
   private $gems = array();
   private $relics = array();
-  private $traits = null;
+  private $traits = array();
 
   public function __construct($json) {
+    if(isset($json['_fromdb'])) {
+      $this->fromDBJson($json);
+    } else {
+      $this->fromBnetJson($json);
+    }
+
+  }
+
+  private function fromDBJson($json) {
+    
+  }
+
+  private function fromBnetJson($json) {
     $this->attributes[':item'] = $json['id'];
     $this->attributes[':quality'] = $json['quality'];
     $this->attributes[':ilvl'] = $json['itemLevel'];
     if(isset($json['tooltipParams']['set'])) {
-      $this->attributes[':setList'] = join($json['tooltipParams']['set']);
+      $this->attributes[':setList'] = join(':', $json['tooltipParams']['set']);
     }
     if(isset($json['tooltipParams']['transmogItem'])) {
       $this->attributes[':transmogItem'] = $json['tooltipParams']['transmogItem'];
@@ -29,7 +42,7 @@ class CharacterItem {
       $this->attributes[':enchant'] = $json['tooltipParams']['enchant'];
     }
     if(isset($json['bonusLists'])) {
-      $this->attributes[':bonusList'] = join($json['bonusLists']);
+      $this->attributes[':bonusList'] = join(':', $json['bonusLists']);
     }
     for($i=0; $i<3; $i++) {
       if(isset($json['tooltipParams']['gem'.$i])) {

@@ -2,6 +2,8 @@
 include_once __DIR__.'/model/character.php';
 use \Model\Character;
 
+define('_RELEASE', 1);
+
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json; charset=UTF-8');
 if(!isset($_GET['action']) || !isset($_GET['name']) || !isset($_GET['realm']) || !isset($_GET['region'])) {
@@ -19,8 +21,9 @@ if(!isset($_GET['action']) || !isset($_GET['name']) || !isset($_GET['realm']) ||
   }
   if($action == 'base') {
     echo $char->getBaseJson();
-  }
-  else {
+  } elseif ($action == 'items') {
+    echo $char->getJson(array('items'));
+  } else {
     die(json_encode(array('error' => 'Invalid operation')));
   }
 }

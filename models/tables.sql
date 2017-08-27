@@ -81,7 +81,7 @@ CREATE TABLE `character_item` (
 	PRIMARY KEY (`id`)
 );
 
-CREATE TABLE `itemslots` (
+CREATE TABLE `itemslot` (
 	`id` int NOT NULL,
 	`name` varchar(64) NOT NULL,
 	PRIMARY KEY (`id`)
@@ -99,7 +99,7 @@ CREATE TABLE `character_item_gem` (
 	`gemid` int NOT NULL
 );
 
-CREATE TABLE `character_item_traits` (
+CREATE TABLE `character_item_trait` (
 	`character_item` int NOT NULL,
 	`traitid` int NOT NULL,
 	`rank` int NOT NULL
@@ -131,7 +131,7 @@ ALTER TABLE `character_talent` ADD CONSTRAINT `character_talent_fk0` FOREIGN KEY
 
 ALTER TABLE `character_talent` ADD CONSTRAINT `character_talent_fk1` FOREIGN KEY (`talent`) REFERENCES `talent`(`id`) ON DELETE CASCADE;
 
-ALTER TABLE `item` ADD CONSTRAINT `item_fk0` FOREIGN KEY (`slot`) REFERENCES `itemslots`(`id`);
+ALTER TABLE `item` ADD CONSTRAINT `item_fk0` FOREIGN KEY (`slot`) REFERENCES `itemslot`(`id`);
 
 ALTER TABLE `character_item` ADD CONSTRAINT `character_item_fk0` FOREIGN KEY (`character`) REFERENCES `character`(`id`) ON DELETE CASCADE;
 
@@ -141,8 +141,8 @@ ALTER TABLE `character_item` ADD CONSTRAINT `character_item_fk2` FOREIGN KEY (`q
 
 ALTER TABLE `character_item_gem` ADD CONSTRAINT `character_item_gem_fk0` FOREIGN KEY (`character_item`) REFERENCES `character_item`(`id`) ON DELETE CASCADE;
 
-ALTER TABLE `character_item_traits` ADD CONSTRAINT `character_item_traits_fk0` FOREIGN KEY (`character_item`) REFERENCES `character_item`(`id`) ON DELETE CASCADE;
+ALTER TABLE `character_item_trait` ADD CONSTRAINT `character_item_trait_fk0` FOREIGN KEY (`character_item`) REFERENCES `character_item`(`id`) ON DELETE CASCADE;
 
-ALTER TABLE `character_item_traits` ADD UNIQUE (`character_item`, `traitid`);
+ALTER TABLE `character_item_trait` ADD UNIQUE (`character_item`, `traitid`);
 
 ALTER TABLE `character_item_relic` ADD CONSTRAINT `character_item_relic_fk0` FOREIGN KEY (`character_item`) REFERENCES `character_item`(`id`) ON DELETE CASCADE;
