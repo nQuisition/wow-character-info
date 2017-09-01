@@ -16,10 +16,15 @@ class Character {
   private static $db = null;
   private static $keys = array('id', 'name', 'realm', 'region', 'class', 'className', 'classColor', 'classIcon', 'raceName',
     'gender', 'thumbnail', 'achievementPoints', 'lastModified', 'specName', 'specIcon', 'ilvl', 'ilvle', 'lastUpdated');
+  private static $statKeys = array('health', 'str', 'agi', 'int', 'sta', 'crit', 'critRating', 'haste', 'hasteRating', 'mastery', 'masteryRating', 'versatility', 'versatilityBonus');
 
   private function __construct($attrs) {
     foreach (self::$keys as $key) {
       $this->attributes[$key] = isset($attrs[$key]) ? $attrs[$key] : null;
+    }
+    $this->attributes['stats'] = array();
+    foreach (self::$statKeys as $key) {
+      $this->attributes['stats'][$key] = isset($attrs[$key]) ? $attrs[$key] : null;
     }
   }
 
@@ -92,29 +97,46 @@ class Character {
         $activeSpec = $talentIds[count($talentIds)-1];
         $ilvl = $json['items']['averageItemLevel'];
         $ilvle = $json['items']['averageItemLevelEquipped'];
-        $lastModified = $json['lastModified']/1000;
-        $lastUpdated = time();
+        $lastModified = $json['lastModified'];
+        $lastUpdated = microtime();
 
         $insertStatement = self::$db->prepareStatement(
           "INSERT INTO `character` (name, realm, region, class, race, gender, thumbnail,
-          achievementPoints, lastModified, activeSpec, ilvl, ilvle, lastUpdated)
+          achievementPoints, lastModified, activeSpec, ilvl, ilvle, lastUpdated,
+          health, str, agi, `int`, sta, crit, critRating, haste, hasteRating, mastery, masteryRating, versatility, versatilityBonus)
           VALUES (:name, :realm, :region, :class, :race, :gender, :thumbnail,
-          :achievementPoints, :lastModified, :activeSpec, :ilvl, :ilvle, :lastUpdated);"
+          :achievementPoints, :lastModified, :activeSpec, :ilvl, :ilvle, :lastUpdated,
+          :health, :str, :agi, :int, :sta, :crit, :critRating, :haste, :hasteRating, :mastery, :masteryRating, :versatility, :versatilityBonus);"
         );
-        $insertStatement->bindParam(':name', $name);
-        $insertStatement->bindParam(':realm', $realm);
-        $insertStatement->bindParam(':region', $region);
-        $insertStatement->bindParam(':class', $json['class']);
-        $insertStatement->bindParam(':race', $json['race']);
-        $insertStatement->bindParam(':gender', $json['gender']);
-        $insertStatement->bindParam(':thumbnail', $json['thumbnail']);
-        $insertStatement->bindParam(':achievementPoints', $json['achievementPoints']);
-        $insertStatement->bindParam(':lastModified', $lastModified);
-        $insertStatement->bindParam(':activeSpec', $activeSpec);
-        $insertStatement->bindParam(':ilvl', $ilvl);
-        $insertStatement->bindParam(':ilvle', $ilvle);
-        $insertStatement->bindParam(':lastUpdated', $lastUpdated);
-        $insertStatement->execute();
+        $insertParameters = array(
+          ':name' => $name,
+          ':realm' => $realm,
+          ':region' => $region,
+          ':class' => $json['class'],
+          ':race' => $json['race'],
+          ':gender' => $json['gender'],
+          ':thumbnail' => $json['thumbnail'],
+          ':achievementPoints' => $json['achievementPoints'],
+          ':lastModified' => $lastModified,
+          ':activeSpec' => $activeSpec,
+          ':ilvl' => $ilvl,
+          ':ilvle' => $ilvle,
+          ':lastUpdated' => $lastUpdated,
+          ':health' => $json['stats']['health'],
+          ':str' => $json['stats']['str'],
+          ':agi' => $json['stats']['agi'],
+          ':int' => $json['stats']['int'],
+          ':sta' => $json['stats']['sta'],
+          ':crit' => $json['stats']['crit'],
+          ':critRating' => $json['stats']['critRating'],
+          ':haste' => $json['stats']['haste'],
+          ':hasteRating' => $json['stats']['hasteRating'],
+          ':mastery' => $json['stats']['mastery'],
+          ':masteryRating' => $json['stats']['masteryRating'],
+          ':versatility' => $json['stats']['versatility'],
+          ':versatilityBonus' => $json['stats']['versatilityDamageDoneBonus']
+        );
+        $insertStatement->execute($insertParameters);
         self::$clocker->clock("Inserted character");
         $charId = self::$db->lastInsertId();
         self::insertTalents(array_slice($talentIds, 0, count($talentIds)-1), $charId);

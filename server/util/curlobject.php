@@ -30,7 +30,7 @@ class CurlObject {
   }
 
   public function curlCharacter($name, $realm, $region) {
-    curl_setopt($this->curl, CURLOPT_URL, 'https://eu.api.battle.net/wow/character/'.$realm.'/'.$name.'?fields=stats%2Citems%2Ctalents&locale=en_GB&apikey='.Config::BNET_API_KEY);
+    curl_setopt($this->curl, CURLOPT_URL, 'https://eu.api.battle.net/wow/character/'.$realm.'/'.$name.'?fields=stats,items,talents&locale=en_GB&apikey='.Config::BNET_API_KEY);
     curl_setopt($this->curl, CURLOPT_CONNECTTIMEOUT, 2);
     curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, true);
     $buffer = curl_exec($this->curl);

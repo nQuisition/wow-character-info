@@ -13,6 +13,19 @@ CREATE TABLE `character` (
 	`ilvl` int NOT NULL,
 	`ilvle` int NOT NULL,
 	`lastUpdated` bigint NOT NULL,
+	`health` int NOT NULL,
+	`str` int NOT NULL,
+	`agi` int NOT NULL,
+	`int` int NOT NULL,
+	`sta` int NOT NULL,
+	`crit` FLOAT NOT NULL,
+	`critRating` int NOT NULL,
+	`haste` FLOAT NOT NULL,
+	`hasteRating` int NOT NULL,
+	`mastery` FLOAT NOT NULL,
+	`masteryRating` int NOT NULL,
+	`versatility` int NOT NULL,
+	`versatilityBonus` FLOAT NOT NULL,
 	PRIMARY KEY (`id`)
 );
 
