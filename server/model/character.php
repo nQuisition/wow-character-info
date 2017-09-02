@@ -5,8 +5,9 @@ include_once __DIR__.'/../util/dbobject.php';
 include_once __DIR__.'/../util/curlobject.php';
 include_once __DIR__.'/../util/cacher.php';
 include_once __DIR__.'/../util/clocker.php';
+include_once __DIR__.'/../util/wowdbutil.php';
 include_once __DIR__.'/characteritem.php';
-use \Util\DBObject, \Util\CurlObject, \Util\Cacher, \Util\Clocker, \PDO, \PDOException;
+use \Util\DBObject, \Util\CurlObject, \Util\Cacher, \Util\Clocker, \Util\WoWDBUtil, \PDO, \PDOException;
 
 class Character {
   private $attributes = array();
@@ -14,8 +15,8 @@ class Character {
   private $specs = array();
   private static $clocker = null;
   private static $db = null;
-  private static $keys = array('id', 'name', 'realm', 'region', 'class', 'className', 'classColor', 'classIcon', 'raceName',
-    'gender', 'thumbnail', 'achievementPoints', 'lastModified', 'specName', 'specIcon', 'ilvl', 'ilvle', 'lastUpdated');
+  private static $keys = array('id', 'name', 'realm', 'region', 'class', 'className', 'classColor', 'classIcon', 'race', 'raceName',
+    'gender', 'thumbnail', 'achievementPoints', 'lastModified', 'activeSpec', 'specName', 'specIcon', 'ilvl', 'ilvle', 'lastUpdated');
   private static $statKeys = array('health', 'str', 'agi', 'int', 'sta', 'crit', 'critRating', 'haste', 'hasteRating', 'mastery', 'masteryRating', 'versatility', 'versatilityBonus');
 
   private function __construct($attrs) {
@@ -60,101 +61,204 @@ class Character {
     $this->specs = $specs;
   }
 
-  public static function fetchCharacter($name, $realm, $region) {
+  public function persist() {
+    /*
+    self::$db->beginTransaction();
+
+    $talentIds = self::getTalentsFromJson($json);
+    self::$clocker->clock("Got talent ids");
+    $activeSpec = $talentIds[count($talentIds)-1];
+    $ilvl = $json['items']['averageItemLevel'];
+    $ilvle = $json['items']['averageItemLevelEquipped'];
+    $lastModified = $json['lastModified'];
+    $lastUpdated = microtime();
+
+    $insertStatement = self::$db->prepareStatement(
+      "INSERT INTO `character` (name, realm, region, class, race, gender, thumbnail,
+      achievementPoints, lastModified, activeSpec, ilvl, ilvle, lastUpdated,
+      health, str, agi, `int`, sta, crit, critRating, haste, hasteRating, mastery, masteryRating, versatility, versatilityBonus)
+      VALUES (:name, :realm, :region, :class, :race, :gender, :thumbnail,
+      :achievementPoints, :lastModified, :activeSpec, :ilvl, :ilvle, :lastUpdated,
+      :health, :str, :agi, :int, :sta, :crit, :critRating, :haste, :hasteRating, :mastery, :masteryRating, :versatility, :versatilityBonus);"
+    );
+    $insertParameters = array(
+      ':name' => $name,
+      ':realm' => $realm,
+      ':region' => $region,
+      ':class' => $json['class'],
+      ':race' => $json['race'],
+      ':gender' => $json['gender'],
+      ':thumbnail' => $json['thumbnail'],
+      ':achievementPoints' => $json['achievementPoints'],
+      ':lastModified' => $lastModified,
+      ':activeSpec' => $activeSpec,
+      ':ilvl' => $ilvl,
+      ':ilvle' => $ilvle,
+      ':lastUpdated' => $lastUpdated,
+      ':health' => $json['stats']['health'],
+      ':str' => $json['stats']['str'],
+      ':agi' => $json['stats']['agi'],
+      ':int' => $json['stats']['int'],
+      ':sta' => $json['stats']['sta'],
+      ':crit' => $json['stats']['crit'],
+      ':critRating' => $json['stats']['critRating'],
+      ':haste' => $json['stats']['haste'],
+      ':hasteRating' => $json['stats']['hasteRating'],
+      ':mastery' => $json['stats']['mastery'],
+      ':masteryRating' => $json['stats']['masteryRating'],
+      ':versatility' => $json['stats']['versatility'],
+      ':versatilityBonus' => $json['stats']['versatilityDamageDoneBonus']
+    );
+    $insertStatement->execute($insertParameters);
+    self::$clocker->clock("Inserted character");
+    $charId = self::$db->lastInsertId();
+    self::insertTalents(array_slice($talentIds, 0, count($talentIds)-1), $charId);
+    self::$clocker->clock("Inserted talents");
+
+    //self::$clocker = new Clocker();
+    $itemList = self::getItemsFromJson($json);
+    self::$clocker->clock("Got items");
+    self::insertItems($itemList, $charId);
+    self::$clocker->clock("Inserted items");
+
+    $result = new Character(self::getCharacterById($charId));
+
+    self::$db->commit();
+    self::$clocker->clock("Everything done");
+    self::$clocker->getTotal();
+      }
+    }
+
+    return $result;
+    */
+  }
+
+  public static function init() {
     self::$clocker = new Clocker();
     self::$db = DBObject::getDBObject();
+  }
+
+  public static function fetchCharacter($name, $realm, $region, $bnetFetch=false) {
+    self::$db->establishConnection();
+    self::$clocker->clock("Connection to db established");
+    $result = null;
+    if ($charInfo = self::getCheckCharacter($name, $realm, $region)) {
+      $result = new Character($charInfo);
+      $charId = $result->getId();
+      $classId = $result->getClassId();
+      $result->setItems(self::getCharacterItems($charId));
+      $result->setSpecs(self::getCharacterSpecs($charId, $classId));
+    } elseif($bnetFetch) {
+      self::$clocker->clock("GotChecked character info");
+      $result = self::fetchFromBnet($name, $realm, $region);
+    }
+    self::$db->closeConnection();
+    return $result;
+  }
+
+  public static function fetchFromDB($name, $realm, $region) {
     self::$db->establishConnection();
     self::$clocker->clock("Connection to db established");
     $result = null;
     if ($charInfo = self::getCheckCharacter($name, $realm, $region)) {
       $result = new Character($charInfo);
     } else {
-      self::$clocker->clock("GotCheckeded character info");
-      $result = self::createCharacter($name, $realm, $region);
+      return null;
     }
-    if($result != null) {
-      $charId = $result->getId();
-      $classId = $result->getClassId();
-      $result->setItems(self::getCharacterItems($charId));
-      $result->setSpecs(self::getCharacterSpecs($charId, $classId));
-    }
+    $charId = $result->getId();
+    $classId = $result->getClassId();
+    $result->setItems(self::getCharacterItems($charId));
+    $result->setSpecs(self::getCharacterSpecs($charId, $classId));
+
     self::$db->closeConnection();
     return $result;
   }
 
-  private static function createCharacter($name, $realm, $region) {
+  public static function fetchFromBnet($name, $realm, $region) {
     $curl = CurlObject::getCurlObject();
     $curl->init();
     self::$clocker->clock("Curl initialized");
+    self::$db->establishConnection();
     $result = null;
     if($json = $curl->curlCharacter($name, $realm, $region)) {
+      $attrs = array();
       self::$clocker->clock("Curling complete");
       if(!(isset($json['status']) && $json['status'] == 'nok')) {
-        self::$db->beginTransaction();
+        $talents = self::getTalentsFromJson($json);
 
-        $talentIds = self::getTalentIds($json);
-        self::$clocker->clock("Got talent ids");
-        $activeSpec = $talentIds[count($talentIds)-1];
-        $ilvl = $json['items']['averageItemLevel'];
-        $ilvle = $json['items']['averageItemLevelEquipped'];
-        $lastModified = $json['lastModified'];
-        $lastUpdated = microtime();
+        self::$clocker->clock("Starting to fill in attrs");
+        $attrs['name'] = $name;
+        $attrs['realm'] = $realm;
+        $attrs['region'] = $region;
+        $attrs['class'] = $json['class'];
+        $classInfo = WoWDBUtil::getClassInfo($json['class']);
+        $attrs['className'] = $classInfo['name'];
+        $attrs['classColor'] = $classInfo['color'];
+        $attrs['classIcon'] = $classInfo['icon'];
+        $attrs['race'] = $json['race'];
+        $raceInfo = WoWDBUtil::getRaceInfo($json['race']);
+        $attrs['raceName'] = $raceInfo['name'];
+        $attrs['gender'] = $json['gender'];
+        $attrs['thumbnail'] = Cacher::getCharacterThumbnailUrl($json['thumbnail']);
+        $attrs['achievementPoints'] = $json['achievementPoints'];
+        $attrs['lastModified'] = $json['lastModified'];
+        $attrs['activeSpec'] = $talents[count($talents)-1];
+        unset($talents[count($talents)-1]);
+        //$specInfo = WoWDBUtil::getSpecInfo($attrs['activeSpec']);
+        //$attrs['specName'] = $specInfo['name'];
+        //$attrs['specIcon'] = $specInfo['icon'];
+        $specs = WoWDBUtil::getClassSpecs($attrs['class']);
+        $specIndices = array();
+        for($i = 0; $i < count($specs); $i++) {
+          $specs[$i]['talents'] = array();
+          if($specs[$i]['id'] == $attrs['activeSpec']) {
+            $attrs['specName'] = $specs[$i]['name'];
+            $attrs['specIcon'] = $specs[$i]['icon'];
+          }
+          $specIndices[$specs[$i]['id']] = $i;
+        }
 
-        $insertStatement = self::$db->prepareStatement(
-          "INSERT INTO `character` (name, realm, region, class, race, gender, thumbnail,
-          achievementPoints, lastModified, activeSpec, ilvl, ilvle, lastUpdated,
-          health, str, agi, `int`, sta, crit, critRating, haste, hasteRating, mastery, masteryRating, versatility, versatilityBonus)
-          VALUES (:name, :realm, :region, :class, :race, :gender, :thumbnail,
-          :achievementPoints, :lastModified, :activeSpec, :ilvl, :ilvle, :lastUpdated,
-          :health, :str, :agi, :int, :sta, :crit, :critRating, :haste, :hasteRating, :mastery, :masteryRating, :versatility, :versatilityBonus);"
-        );
-        $insertParameters = array(
-          ':name' => $name,
-          ':realm' => $realm,
-          ':region' => $region,
-          ':class' => $json['class'],
-          ':race' => $json['race'],
-          ':gender' => $json['gender'],
-          ':thumbnail' => $json['thumbnail'],
-          ':achievementPoints' => $json['achievementPoints'],
-          ':lastModified' => $lastModified,
-          ':activeSpec' => $activeSpec,
-          ':ilvl' => $ilvl,
-          ':ilvle' => $ilvle,
-          ':lastUpdated' => $lastUpdated,
-          ':health' => $json['stats']['health'],
-          ':str' => $json['stats']['str'],
-          ':agi' => $json['stats']['agi'],
-          ':int' => $json['stats']['int'],
-          ':sta' => $json['stats']['sta'],
-          ':crit' => $json['stats']['crit'],
-          ':critRating' => $json['stats']['critRating'],
-          ':haste' => $json['stats']['haste'],
-          ':hasteRating' => $json['stats']['hasteRating'],
-          ':mastery' => $json['stats']['mastery'],
-          ':masteryRating' => $json['stats']['masteryRating'],
-          ':versatility' => $json['stats']['versatility'],
-          ':versatilityBonus' => $json['stats']['versatilityDamageDoneBonus']
-        );
-        $insertStatement->execute($insertParameters);
-        self::$clocker->clock("Inserted character");
-        $charId = self::$db->lastInsertId();
-        self::insertTalents(array_slice($talentIds, 0, count($talentIds)-1), $charId);
-        self::$clocker->clock("Inserted talents");
+        $attrs['ilvl'] = $json['items']['averageItemLevel'];
+        $attrs['ilvle'] = $json['items']['averageItemLevelEquipped'];
+        $attrs['lastUpdated'] = microtime();
 
-        //self::$clocker = new Clocker();
-        $itemList = self::getItems($json);
-        self::$clocker->clock("Got items");
-        self::insertItems($itemList, $charId);
-        self::$clocker->clock("Inserted items");
+        $attrs['health'] = $json['stats']['health'];
+        $attrs['str'] = $json['stats']['str'];
+        $attrs['agi'] = $json['stats']['agi'];
+        $attrs['int'] = $json['stats']['int'];
+        $attrs['sta'] = $json['stats']['sta'];
+        $attrs['crit'] = $json['stats']['crit'];
+        $attrs['critRating'] = $json['stats']['critRating'];
+        $attrs['haste'] = $json['stats']['haste'];
+        $attrs['hasteRating'] = $json['stats']['hasteRating'];
+        $attrs['mastery'] = $json['stats']['mastery'];
+        $attrs['masteryRating'] = $json['stats']['masteryRating'];
+        $attrs['versatility'] = $json['stats']['versatility'];
+        $attrs['versatilityBonus'] = $json['stats']['versatilityDamageDoneBonus'];
+        self::$clocker->clock("Filling in attrs complete");
 
-        $result = new Character(self::getCharacterById($charId));
+        $result = new Character($attrs);
+        foreach($talents as $talent) {
+          $specs[$specIndices[$talent['spec']]]['talents'][] = $talent;
+        }
+        $_it = self::getItemsFromJson($json);
+        $items = array();
+        foreach($_it as $item) {
+          $items[] = $item->toAssocArray();
+        }
 
-        self::$db->commit();
-        self::$clocker->clock("Everything done");
-        self::$clocker->getTotal();
+        $result->setItems($items);
+        $result->setSpecs($specs);
+
+        //TODO doesn't work?
+        //foreach ($specs as $value) {
+        //  unset($value['id']);
+        //}
       }
     }
+    self::$clocker->clock("Everything done");
+    self::$clocker->getTotal();
+    self::$db->closeConnection();
     $curl->closeConnection();
     return $result;
   }
@@ -227,14 +331,15 @@ class Character {
     }
   }
 
-  private static function getItems($json) {
+  private static function getItemsFromJson($json) {
     $result = array();
     $items = $json['items'];
-    $itemSlotStatement = self::$db->prepareStatement(
-      "SELECT id, name FROM itemslot;"
-    );
-    $itemSlotStatement->execute();
-    $itemSlots = $itemSlotStatement->fetchAll(PDO::FETCH_ASSOC);
+    $itemSlots = WoWDBUtil::getItemSlots();
+    $_iq = WoWDBUtil::getItemQualities();
+    $itemQualities = array();
+    foreach ($_iq as $value) {
+      $itemQualities[$value['id']] = $value;
+    }
 
     $insertStatement = self::$db->prepareStatement(
       "INSERT IGNORE INTO item (id, name, icon, slot)
@@ -257,19 +362,21 @@ class Character {
       Cacher::cacheIcon('item', $itemIcon);
       $insertStatement->execute();
       $characterItem = new CharacterItem($item);
+      $characterItem->setSlot($slotId, $slotName);
+      $characterItem->setQuality($itemQualities[$item['quality']]['name'], $itemQualities[$item['quality']]['color']);
       $result[] = $characterItem;
     }
     return $result;
   }
 
   //Last element of the returned array is the active spec id
-  private static function getTalentIds($json) {
+  private static function getTalentsFromJson($json, $sort=true) {
     $result = array();
     $activeSpecId = -1;
     $talents = $json['talents'];
 
     $checkStatement = self::$db->prepareStatement(
-      "SELECT id FROM talent WHERE spec=:spec AND tier=:tier AND `column`=:column;"
+      "SELECT * FROM talent WHERE spec=:spec AND tier=:tier AND `column`=:column;"
     );
     $checkStatement->bindParam(':spec', $specId);
     $checkStatement->bindParam(':tier', $tier);
@@ -301,7 +408,7 @@ class Character {
         $column = $talent['column'];
         $checkStatement->execute();
         if($row = $checkStatement->fetch(PDO::FETCH_ASSOC)) {
-          $result[] = $row['id'];
+          $result[] = $row;
         }
         else {
           $talName = $talent['spell']['name'];
@@ -311,10 +418,23 @@ class Character {
           $talIcon = $talent['spell']['icon'];
           Cacher::cacheIcon('spell', $talIcon);
           if($insertStatement->execute()) {
-            $result[] = self::$db->lastInsertId();
+            $result[] = array(
+              'id'      => self::$db->lastInsertId(),
+              'name'    => $talName,
+              'tier'    => $talTier,
+              'column'  => $talColumn,
+              'spellid' => $talSpellid,
+              'icon'    => $talIcon,
+              'spec'    => $specId
+            );
           }
         }
       }
+    }
+    if($sort) {
+      usort($result, function($a, $b) {
+          return $a['tier']<$b['tier'] ? -1 : ($a['tier']>$b['tier'] ? 1 : 0);
+      });
     }
     $result[] = $activeSpecId;
     return $result;
@@ -422,12 +542,7 @@ class Character {
   }
 
   private static function getCharacterSpecs($id, $class) {
-    $specStatement = self::$db->prepareStatement(
-      "SELECT id, name, role, backgroundImage, icon
-      FROM spec WHERE class=:class ORDER BY `order` ASC;"
-    );
-    $specStatement->execute(array(':class' => $class));
-    $result = $specStatement->fetchAll(PDO::FETCH_ASSOC);
+    $result = WoWDBUtil::getClassSpecs($class);
     $specIndices = array();
     for($i = 0; $i < count($result); $i++) {
       $result[$i]['talents'] = array();
@@ -446,13 +561,13 @@ class Character {
     $talents = $talentStatement->fetchAll(PDO::FETCH_ASSOC);
     foreach($talents as $talent) {
       $specId = $talent['specId'];
-      unset($talent['specId']);
+      //unset($talent['specId']);
       $result[$specIndices[$specId]]['talents'][] = $talent;
     }
     //TODO doesn't work?
-    foreach ($result as $value) {
-      unset($value['id']);
-    }
+    //foreach ($result as $value) {
+    //  unset($value['id']);
+    //}
 
     return $result;
   }

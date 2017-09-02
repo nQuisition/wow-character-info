@@ -2,14 +2,22 @@
 namespace Model;
 
 class CharacterItem {
-  private $attributes = array(
-    ':item' => -1,
-    ':quality' => -1,
-    ':ilvl' => 0,
-    ':setList' => null,
+  private $dbAttributes = array(
+    ':item'         => -1,
+    ':quality'      => -1,
+    ':ilvl'         => 0,
+    ':setList'      => null,
     ':transmogItem' => null,
-    ':bonusList' => null,
-    ':enchant' => null
+    ':bonusList'    => null,
+    ':enchant'      => null
+  );
+  private $additionalAttributes = array(
+    'name'          => null,
+    'icon'          => null,
+    'slotNum'       => -1,
+    'slot'          => null, //name
+    'quality'       => null, //name
+    'qualityColor'  => null
   );
   private $gems = array();
   private $relics = array();
@@ -25,24 +33,24 @@ class CharacterItem {
   }
 
   private function fromDBJson($json) {
-    
+
   }
 
   private function fromBnetJson($json) {
-    $this->attributes[':item'] = $json['id'];
-    $this->attributes[':quality'] = $json['quality'];
-    $this->attributes[':ilvl'] = $json['itemLevel'];
+    $this->dbAttributes[':item'] = $json['id'];
+    $this->dbAttributes[':quality'] = $json['quality'];
+    $this->dbAttributes[':ilvl'] = $json['itemLevel'];
     if(isset($json['tooltipParams']['set'])) {
-      $this->attributes[':setList'] = join(':', $json['tooltipParams']['set']);
+      $this->dbAttributes[':setList'] = join(':', $json['tooltipParams']['set']);
     }
     if(isset($json['tooltipParams']['transmogItem'])) {
-      $this->attributes[':transmogItem'] = $json['tooltipParams']['transmogItem'];
+      $this->dbAttributes[':transmogItem'] = $json['tooltipParams']['transmogItem'];
     }
     if(isset($json['tooltipParams']['enchant'])) {
-      $this->attributes[':enchant'] = $json['tooltipParams']['enchant'];
+      $this->dbAttributes[':enchant'] = $json['tooltipParams']['enchant'];
     }
     if(isset($json['bonusLists'])) {
-      $this->attributes[':bonusList'] = join(':', $json['bonusLists']);
+      $this->dbAttributes[':bonusList'] = join(':', $json['bonusLists']);
     }
     for($i=0; $i<3; $i++) {
       if(isset($json['tooltipParams']['gem'.$i])) {
@@ -55,10 +63,23 @@ class CharacterItem {
     if(isset($json['relics'])) {
       $this->relics = $json['relics'];
     }
+
+    $this->additionalAttributes['name'] = $json['name'];
+    $this->additionalAttributes['icon'] = $json['icon'];
+  }
+
+  public function setSlot($slotNum, $slot) {
+    $this->additionalAttributes['slotNum'] = $slotNum;
+    $this->additionalAttributes['slot']    = $slot;
+  }
+
+  public function setQuality($quality, $qualityColor) {
+    $this->additionalAttributes['quality'] = $quality;
+    $this->additionalAttributes['qualityColor']    = $qualityColor;
   }
 
   public function getBaseAttributes() {
-    return $this->attributes;
+    return $this->dbAttributes;
   }
 
   public function getGems() {
@@ -71,5 +92,20 @@ class CharacterItem {
 
   public function getTraits() {
     return $this->traits;
+  }
+
+  public function toAssocArray() {
+    $result = array();
+    foreach ($this->dbAttributes as $key => $value) {
+      $newKey = substr($key, 1);
+      $result[$newKey] = $value;
+    }
+    $result['id'] = $result['item'];
+    unset($result['item']);
+    $result = array_merge($result, $this->additionalAttributes);
+    $result['gems'] = $this->gems;
+    $result['relics'] = $this->relics;
+    $result['traits'] = $this->traits;
+    return $result;
   }
 }
