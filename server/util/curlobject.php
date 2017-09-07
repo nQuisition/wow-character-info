@@ -42,6 +42,19 @@ class CurlObject {
     return json_decode($buffer, true);
   }
 
+  public function curlTalents() {
+    curl_setopt($this->curl, CURLOPT_URL, 'https://eu.api.battle.net/wow/data/talents?locale=en_GB&apikey='.Config::BNET_API_KEY);
+    curl_setopt($this->curl, CURLOPT_CONNECTTIMEOUT, 2);
+    curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, true);
+    $buffer = curl_exec($this->curl);
+
+    if (empty($buffer)) {
+      return false;
+    }
+
+    return json_decode($buffer, true);
+  }
+
   public function closeConnection() {
     curl_close($this->curl);
   }

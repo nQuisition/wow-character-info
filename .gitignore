@@ -7,5 +7,4 @@
 /src/js/config/*
 /src/js/stores/*
 
-/models/bnet_data_talents.json
 /models/wl_parses_character.json

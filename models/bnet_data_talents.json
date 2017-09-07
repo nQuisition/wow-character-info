@@ -1,0 +1,93 @@
+{
+    "1": {        //class id. NB - this is object, not array, and id's are fields
+        "specs": [
+          {
+            "name": "Arms",
+            "role": "DPS",
+            "backgroundImage": "bg-warrior-arms",
+            "icon": "ability_warrior_savageblow",
+            "order": 0
+        },
+        //..
+        //other specs
+      ],
+        "talents": [    //this is a matrix of talents, talents[i][j] is array of talents at tier i, column j
+                        //for all the available specs
+            [
+                [
+                  {
+                    "tier": 0,
+                    "column": 0,
+                    "spell": {
+                        "id": 202297,
+                        "name": "Dauntless",
+                        "icon": "ability_warrior_unrelentingassault",
+                        //...
+                    },
+                    "spec": {
+                        "name": "Arms",
+                        //...
+                    }
+                }, {
+                    "tier": 0,
+                    "column": 0,
+                    "spell": {
+                        "id": 46968,
+                        "name": "Shockwave",
+                        "icon": "ability_warrior_shockwave",
+                        //...
+                    },
+                    "spec": {
+                        "name": "Protection",
+                        //...
+                    }
+                }, {
+                    "tier": 0,
+                    "column": 0,
+                    "spell": {
+                        "id": 215556,
+                        "name": "War Machine",
+                        "icon": "ability_hunter_rapidkilling",
+                        //...
+                    },
+                    "spec": {
+                        "name": "Fury",
+                        //...
+                    }
+                }],
+                //...
+                [{
+                    "tier": 1,
+                    "column": 2,
+                    "spell": {
+                        "id": 223657,
+                        "name": "Safeguard",
+                        "icon": "ability_warrior_safeguard",
+                        //...
+                    },
+                    "spec": {
+                        "name": "Protection",
+                        //...
+                    }
+                }, {
+                    "tier": 1,
+                    "column": 2,
+                    "spell": {
+                        "id": 103827,
+                        "name": "Double Time",
+                        "icon": "inv_misc_horn_04",
+                        //...
+                    }
+                    //no spec field means this talent is in all specs that were not mentined
+                    //elsewhere in this [tier][column]
+                }]
+            ],
+            //...
+        ],
+        "class": "warrior"
+    },
+    "2": {
+        //...
+    },
+    //...
+}

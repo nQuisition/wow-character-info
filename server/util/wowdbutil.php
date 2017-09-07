@@ -85,6 +85,32 @@ class WoWDBUtil {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
   }
 
+  public static function getClassTalents($class) {
+    self::checkDBObject();
+    $stmt = self::$dbobject->prepareStatement(
+      "SELECT tal.id AS id, tal.name AS name, tal.tier AS tier, tal.`column` AS `column`,
+      tal.spellid AS spellid, tal.icon AS icon, tal.spec AS spec
+      FROM talent tal
+      INNER JOIN spec sp ON tal.spec=sp.id
+      WHERE sp.class=:class ORDER BY spec ASC, tier ASC;"
+    );
+    $stmt->execute(array(':class' => $class));
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+  }
+
+  public static function getClassTalentsGrouped($class) {
+    self::checkDBObject();
+    $stmt = self::$dbobject->prepareStatement(
+      "SELECT tal.spellid AS index_id, tal.id AS id, tal.name AS name, tal.tier AS tier,
+      tal.`column` AS `column`, tal.spellid AS spellid, tal.icon AS icon
+      FROM talent tal
+      INNER JOIN spec sp ON tal.spec=sp.id
+      WHERE sp.class=:class GROUP BY index_id ORDER BY index_id ASC;"
+    );
+    $stmt->execute(array(':class' => $class));
+    return $stmt->fetchAll(PDO::FETCH_ASSOC | PDO::FETCH_UNIQUE);
+  }
+
   public static function getItemSlots() {
     self::checkDBObject();
     $stmt = self::$dbobject->prepareStatement(
