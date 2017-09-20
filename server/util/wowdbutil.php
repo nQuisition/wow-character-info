@@ -5,8 +5,6 @@ include_once __DIR__.'/dbobject.php';
 use \PDO, \PDOException;
 
 class WoWDBUtil {
-  private static $dbobject=null;
-
   private function __construct() {
 
   }
@@ -23,9 +21,8 @@ class WoWDBUtil {
    * @param int $class Class id
    * @return array Class info as array (see above)
    */
-  public static function getClassInfo($class) {
-    self::checkDBObject();
-    $stmt = self::$dbobject->prepareStatement(
+  public static function getClassInfo($db, $class) {
+    $stmt = $db->prepareStatement(
       "SELECT * FROM class WHERE id=:id;"
     );
     $stmt->execute(array(':id' => $class));
@@ -43,9 +40,8 @@ class WoWDBUtil {
    * @param int $race Race id
    * @return array Race info as array (see above)
    */
-  public static function getRaceInfo($race) {
-    self::checkDBObject();
-    $stmt = self::$dbobject->prepareStatement(
+  public static function getRaceInfo($db, $race) {
+    $stmt = $db->prepareStatement(
       "SELECT * FROM race WHERE id=:id;"
     );
     $stmt->execute(array(':id' => $race));
@@ -66,18 +62,38 @@ class WoWDBUtil {
    * @param int $spec Spec id
    * @return array Spec info as array (see above)
    */
-  public static function getSpecInfo($spec) {
-    self::checkDBObject();
-    $stmt = self::$dbobject->prepareStatement(
+  public static function getSpecInfo($db, $spec) {
+    $stmt = $db->prepareStatement(
       "SELECT * FROM spec WHERE id=:id;"
     );
     $stmt->execute(array(':id' => $spec));
     return $stmt->fetch(PDO::FETCH_ASSOC);
   }
 
-  public static function getClassSpecs($class) {
-    self::checkDBObject();
-    $stmt = self::$dbobject->prepareStatement(
+  public static function getTalentsForCharSpec($db, $char, $spec) {
+    $stmt = $db->prepareStatement(
+      "SELECT tal.*
+      FROM talent tal
+      INNER JOIN charinstance_talent chit ON tal.id=chit.talent
+      WHERE chit.charid=:charid AND chit.main=TRUE AND tal.spec=:specid;"
+    );
+    $stmt->execute(array(':charid' => $char, ':specid' => $spec));
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+  }
+
+  public static function getTalentsForCharinstanceSpec($db, $charinstance, $spec) {
+    $stmt = $db->prepareStatement(
+      "SELECT tal.*
+      FROM talent tal
+      INNER JOIN charinstance_talent chit ON tal.id=chit.talent
+      WHERE chit.id=:instanceid AND tal.spec=:specid;"
+    );
+    $stmt->execute(array(':instanceid' => $charinstance, ':specid' => $spec));
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+  }
+
+  public static function getClassSpecs($db, $class) {
+    $stmt = $db->prepareStatement(
       "SELECT id, name, role, backgroundImage, icon
       FROM spec WHERE class=:class ORDER BY `order` ASC;"
     );
@@ -85,9 +101,8 @@ class WoWDBUtil {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
   }
 
-  public static function getClassTalents($class) {
-    self::checkDBObject();
-    $stmt = self::$dbobject->prepareStatement(
+  public static function getClassTalents($db, $class) {
+    $stmt = $db->prepareStatement(
       "SELECT tal.id AS id, tal.name AS name, tal.tier AS tier, tal.`column` AS `column`,
       tal.spellid AS spellid, tal.icon AS icon, tal.spec AS spec
       FROM talent tal
@@ -98,9 +113,8 @@ class WoWDBUtil {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
   }
 
-  public static function getClassTalentsGrouped($class) {
-    self::checkDBObject();
-    $stmt = self::$dbobject->prepareStatement(
+  public static function getClassTalentsGrouped($db, $class) {
+    $stmt = $db->prepareStatement(
       "SELECT tal.spellid AS index_id, tal.id AS id, tal.name AS name, tal.tier AS tier,
       tal.`column` AS `column`, tal.spellid AS spellid, tal.icon AS icon
       FROM talent tal
@@ -111,27 +125,19 @@ class WoWDBUtil {
     return $stmt->fetchAll(PDO::FETCH_ASSOC | PDO::FETCH_UNIQUE);
   }
 
-  public static function getItemSlots() {
-    self::checkDBObject();
-    $stmt = self::$dbobject->prepareStatement(
+  public static function getItemSlots($db) {
+    $stmt = $db->prepareStatement(
       "SELECT id, name FROM itemslot;"
     );
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
   }
 
-  public static function getItemQualities() {
-    self::checkDBObject();
-    $stmt = self::$dbobject->prepareStatement(
+  public static function getItemQualities($db) {
+    $stmt = $db->prepareStatement(
       "SELECT id, name, color FROM itemquality;"
     );
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
-  }
-
-  private static function checkDBObject() {
-    if(self::$dbobject == null) {
-      self::$dbobject = DBObject::getDBObject();
-    }
   }
 }

@@ -1,12 +1,19 @@
 <?php
 include_once __DIR__.'/model/character.php';
-use \Model\Character;
+include_once __DIR__.'/util/dbobject.php';
+include_once __DIR__.'/util/curlobject.php';
+use \Model\Character, \Util\DBObject, \Util\CurlObject;
 
 define('_RELEASE', 1);
 
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json; charset=UTF-8');
-Character::init();
+$db = new DBObject();
+$db->establishConnection();
+$curl = new CurlObject();
+$curl->init();
+
+Character::init($db, $curl);
 if(!isset($_GET['name']) || !isset($_GET['realm']) || !isset($_GET['region'])) {
   header('HTTP/1.1 400 Missing Parameters');
   die(json_encode(array('error' => 'One or more parameters are missing', 'code' => 400)));
@@ -29,3 +36,6 @@ if(!isset($_GET['name']) || !isset($_GET['realm']) || !isset($_GET['region'])) {
     echo $char->getJson($params);
   }
 }
+
+$db->closeConnection();
+$curl->closeConnection();

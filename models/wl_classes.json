@@ -1,0 +1,21 @@
+[
+  {
+    "id": 1,
+    "name": "Death Knight",
+    "specs": [
+      {
+        "id": 1,
+        "name": "Blood"
+      },
+      {
+        "id": 2,
+        "name": "Frost"
+      },
+      {
+        "id": 3,
+        "name": "Unholy"
+      }
+    ]
+  },
+  //..
+]

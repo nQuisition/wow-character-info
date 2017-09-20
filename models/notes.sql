@@ -1,10 +1,15 @@
 SET FOREIGN_KEY_CHECKS = 0;
 TRUNCATE table `character`;
-TRUNCATE table character_item;
-TRUNCATE table character_item_gem;
-TRUNCATE table character_item_relic;
-TRUNCATE table character_item_trait;
-TRUNCATE table character_talent;
+TRUNCATE table charinstance;
+TRUNCATE table charinstance_item;
+TRUNCATE table charinstance_item_gem;
+TRUNCATE table charinstance_item_relic;
+TRUNCATE table charinstance_item_trait;
+TRUNCATE table charinstance_talent;
+SET FOREIGN_KEY_CHECKS = 1;
+
+
+SET FOREIGN_KEY_CHECKS = 0;
 TRUNCATE table item;
 TRUNCATE table spec;
 TRUNCATE table talent;

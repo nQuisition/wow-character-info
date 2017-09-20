@@ -4,19 +4,20 @@ namespace Install;
 include_once __DIR__.'/../util/cacher.php';
 include_once __DIR__.'/../util/curlobject.php';
 include_once __DIR__.'/../util/dbobject.php';
+include_once __DIR__.'/../config/config.php';
 
-use \Util\DBObject, \Util\CurlObject, \Util\Cacher;
+use \Util\DBObject, \Util\CurlObject, \Util\Cacher, \Config\Config;
 
-$db = DBObject::getDBObject();
+$db = new DBObject();
 $db->establishConnection();
+$curl = new CurlObject();
+$curl->init();
 
 //TODO get classes
 
 //TODO get races
 
 //Specs and talents
-$curl = CurlObject::getCurlObject();
-$curl->init();
 if($json = $curl->curlTalents()) {
   //TODO create tables?
   $db->beginTransaction();
@@ -95,4 +96,60 @@ if($json = $curl->curlTalents()) {
   $db->commit();
 }
 
+//***********************************
+//    WCL
+//***********************************
+
+if($json = $curl->curlWCLZones()) {
+  //TODO create tables?
+  $db->beginTransaction();
+  $zoneStatement = $db->prepareStatement(
+    'INSERT IGNORE INTO wclzone(id, name) VALUES (:id, :name);'
+  );
+  $bossStatement = $db->prepareStatement(
+    'INSERT IGNORE INTO wclboss(id, name, zone) VALUES (:id, :name, :zone);'
+  );
+  $bracketStatement = $db->prepareStatement(
+    'INSERT IGNORE INTO wclbracket(id, name, zone) VALUES (:id, :name, :zone);'
+  );
+  $difficultyStatement = $db->prepareStatement(
+    'INSERT IGNORE INTO wcldifficulty(id, name, abbr) VALUES (:id, :name, :abbr);'
+  );
+
+  $allowedZones = array_map('strtolower', Config::WCL_ZONES);
+  foreach($json as $zone) {
+    if(!in_array(strtolower($zone[name]), $allowedZones))
+      continue;
+    $zoneStatement->execute(array(
+      ':id' => $zone['id'],
+      ':name' => $zone['name']
+    ));
+    foreach($zone['encounters'] as $encounter) {
+      $bossStatement->execute(array(
+        ':id' => $encounter['id'],
+        ':name' => $encounter['name'],
+        ':zone' => $zone['id']
+      ));
+    }
+    foreach($zone['brackets'] as $bracket) {
+      $bracketStatement->execute(array(
+        ':id' => $bracket['id'],
+        ':name' => $bracket['name'],
+        ':zone' => $zone['id']
+      ));
+    }
+  }
+
+  foreach(Config::WCL_DIFFICULTIES as $diff) {
+    $difficultyStatement->execute(array(
+      ':id' => $diff['id'],
+      ':name' => $diff['name'],
+      ':abbr' => $diff['abbr']
+    ));
+  }
+
+  $db->commit();
+}
+
 $db->closeConnection();
+$curl->closeConnection();

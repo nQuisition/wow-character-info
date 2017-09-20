@@ -6,26 +6,81 @@ include_once __DIR__.'/../util/curlobject.php';
 include_once __DIR__.'/../util/cacher.php';
 include_once __DIR__.'/../util/clocker.php';
 include_once __DIR__.'/../util/wowdbutil.php';
+include_once __DIR__.'/dbbase.php';
 include_once __DIR__.'/characteritem.php';
 use \Util\DBObject, \Util\CurlObject, \Util\Cacher, \Util\Clocker, \Util\WoWDBUtil, \PDO, \PDOException;
 
-class Character {
-  private $attributes = array();
+class Character extends DBBase {
+  //character
+  private $attributes = array(
+    'id' => -1,
+    'instanceid' => -1,
+    'name' => '',
+    'realm' => '',
+    'region' => '',
+    'gender' => -1,
+    'thumbnail' => '',
+    'achievementPoints' => -1,
+    'lastModified' => -1,
+    'lastUpdated' => -1,
+
+    //charinstance
+    'ilvl' => -1,
+    'ilvle' => -1
+  );
+
+  private $class = array(
+    'id' => -1,
+    'wclid' => -1,
+    'name' => '',
+    'wclname' => '',
+    'color' => '',
+    'icon' => ''
+  );
+  private $race = array(
+    'id' => -1,
+    'name' => '',
+    'maleIcon' => '',
+    'femaleIcon' => ''
+  );
+  private $activeSpec = array(
+    'id' => -1,
+    'name' => '',
+    'role' => '',
+    'icon' => ''
+  );
+  private $stats = array(
+    'health' => -1,
+    'str' => -1,
+    'agi' => -1,
+    'int' => -1,
+    'sta' => -1,
+    'crit' => -1,
+    'critRating' => -1,
+    'haste' => -1,
+    'hasteRating' => -1,
+    'mastery' => -1,
+    'masteryRating' => -1,
+    'versatility' => -1,
+    'versatilityBonus' => -1
+  );
+  private $activeTalents = array();
+
   private $items = array();
   private $specs = array();
+
   private static $clocker = null;
-  private static $db = null;
-  private static $keys = array('id', 'name', 'realm', 'region', 'class', 'className', 'classColor', 'classIcon', 'race', 'raceName',
-    'gender', 'thumbnail', 'achievementPoints', 'lastModified', 'activeSpec', 'specName', 'specIcon', 'ilvl', 'ilvle', 'lastUpdated');
-  private static $statKeys = array('health', 'str', 'agi', 'int', 'sta', 'crit', 'critRating', 'haste', 'hasteRating', 'mastery', 'masteryRating', 'versatility', 'versatilityBonus');
 
   private function __construct($attrs) {
-    foreach (self::$keys as $key) {
+    foreach (array_keys(self::$attributes) as $key) {
       $this->attributes[$key] = isset($attrs[$key]) ? $attrs[$key] : null;
     }
-    $this->attributes['stats'] = array();
-    foreach (self::$statKeys as $key) {
-      $this->attributes['stats'][$key] = isset($attrs[$key]) ? $attrs[$key] : null;
+    $this->class = WoWDBUtil::getClassInfo(self::$db, $attrs['class']);
+    $this->race = WoWDBUtil::getRaceInfo(self::$db, $attrs['race']);
+    $this->activeSpec = WOWDBUtil::getSpecInfo(self::$db, $attrs['activeSpec']);
+    $this->activeTalents = WOWDBUtil::getTalentsForCharinstanceSpec(self::$db, $attrs['instanceid'], $attrs['activeSpec'])
+    foreach (array_keys(self::$stats) as $key) {
+      $this->stats[$key] = isset($attrs[$key]) ? $attrs[$key] : null;
     }
   }
 
@@ -33,8 +88,12 @@ class Character {
     return $this->attributes['id'];
   }
 
+  public function getInstanceId() {
+    return $this->attributes['instanceid'];
+  }
+
   public function getClassId() {
-    return $this->attributes['class'];
+    return $this->class['id'];
   }
 
   public function getBaseJson() {
@@ -71,7 +130,7 @@ class Character {
     $ilvl = $json['items']['averageItemLevel'];
     $ilvle = $json['items']['averageItemLevelEquipped'];
     $lastModified = $json['lastModified'];
-    $lastUpdated = microtime();
+    $lastUpdated = round(microtime(true) * 1000);
 
     $insertStatement = self::$db->prepareStatement(
       "INSERT INTO `character` (name, realm, region, class, race, gender, thumbnail,
@@ -133,32 +192,26 @@ class Character {
     */
   }
 
-  public static function init() {
+  public static function init($db) {
+    parent::init($db);
     self::$clocker = new Clocker();
-    self::$db = DBObject::getDBObject();
   }
 
-  public static function fetchCharacter($name, $realm, $region, $bnetFetch=false) {
-    self::$db->establishConnection();
-    self::$clocker->clock("Connection to db established");
-    $result = null;
-    if ($charInfo = self::getCheckCharacter($name, $realm, $region)) {
-      $result = new Character($charInfo);
-      $charId = $result->getId();
-      $classId = $result->getClassId();
-      $result->setItems(self::getCharacterItems($charId));
-      $result->setSpecs(self::getCharacterSpecs($charId, $classId));
-    } elseif($bnetFetch) {
-      self::$clocker->clock("GotChecked character info");
+  public static function fetchCharacter($name, $realm, $region, $bnetFetch=false, $persist=false) {
+    self::$clocker->clock("Starting character fetch");
+    $result = self::fetchFromDB($name, $realm, $region);
+    if (is_null($result) && $bnetFetch) {
+      self::$clocker->clock("Fetching from BNet");
       $result = self::fetchFromBnet($name, $realm, $region);
+      if($persist) {
+        $result->persist();
+      }
     }
-    self::$db->closeConnection();
     return $result;
   }
 
   public static function fetchFromDB($name, $realm, $region) {
-    self::$db->establishConnection();
-    self::$clocker->clock("Connection to db established");
+    self::$clocker->clock("Fetching from DB");
     $result = null;
     if ($charInfo = self::getCheckCharacter($name, $realm, $region)) {
       $result = new Character($charInfo);
@@ -170,17 +223,13 @@ class Character {
     $result->setItems(self::getCharacterItems($charId));
     $result->setSpecs(self::getCharacterSpecs($charId, $classId));
 
-    self::$db->closeConnection();
     return $result;
   }
 
   public static function fetchFromBnet($name, $realm, $region) {
-    $curl = CurlObject::getCurlObject();
-    $curl->init();
     self::$clocker->clock("Curl initialized");
-    self::$db->establishConnection();
     $result = null;
-    if($json = $curl->curlCharacter($name, $realm, $region)) {
+    if($json = $self::curl->curlCharacter($name, $realm, $region)) {
       $attrs = array();
       self::$clocker->clock("Curling complete");
       if(!(isset($json['status']) && $json['status'] == 'nok')) {
@@ -191,15 +240,9 @@ class Character {
         $attrs['realm'] = $realm;
         $attrs['region'] = $region;
         $attrs['class'] = $json['class'];
-        $classInfo = WoWDBUtil::getClassInfo($json['class']);
-        $attrs['className'] = $classInfo['name'];
-        $attrs['classColor'] = $classInfo['color'];
-        $attrs['classIcon'] = $classInfo['icon'];
         $attrs['race'] = $json['race'];
-        $raceInfo = WoWDBUtil::getRaceInfo($json['race']);
-        $attrs['raceName'] = $raceInfo['name'];
         $attrs['gender'] = $json['gender'];
-        $attrs['thumbnail'] = Cacher::getCharacterThumbnailUrl($json['thumbnail']);
+        $attrs['thumbnail'] = $json['thumbnail'];
         $attrs['achievementPoints'] = $json['achievementPoints'];
         $attrs['lastModified'] = $json['lastModified'];
         $attrs['activeSpec'] = $talents[count($talents)-1];
@@ -207,7 +250,7 @@ class Character {
         //$specInfo = WoWDBUtil::getSpecInfo($attrs['activeSpec']);
         //$attrs['specName'] = $specInfo['name'];
         //$attrs['specIcon'] = $specInfo['icon'];
-        $specs = WoWDBUtil::getClassSpecs($attrs['class']);
+        $specs = WoWDBUtil::getClassSpecs(self::$db, $attrs['class']);
         $specIndices = array();
         for($i = 0; $i < count($specs); $i++) {
           $specs[$i]['talents'] = array();
@@ -220,7 +263,7 @@ class Character {
 
         $attrs['ilvl'] = $json['items']['averageItemLevel'];
         $attrs['ilvle'] = $json['items']['averageItemLevelEquipped'];
-        $attrs['lastUpdated'] = microtime();
+        $attrs['lastUpdated'] = round(microtime(true) * 1000);
 
         $attrs['health'] = $json['stats']['health'];
         $attrs['str'] = $json['stats']['str'];
@@ -258,8 +301,6 @@ class Character {
     }
     self::$clocker->clock("Everything done");
     self::$clocker->getTotal();
-    self::$db->closeConnection();
-    $curl->closeConnection();
     return $result;
   }
 
@@ -334,8 +375,8 @@ class Character {
   private static function getItemsFromJson($json) {
     $result = array();
     $items = $json['items'];
-    $itemSlots = WoWDBUtil::getItemSlots();
-    $_iq = WoWDBUtil::getItemQualities();
+    $itemSlots = WoWDBUtil::getItemSlots(self::$db);
+    $_iq = WoWDBUtil::getItemQualities(self::$db);
     $itemQualities = array();
     foreach ($_iq as $value) {
       $itemQualities[$value['id']] = $value;
@@ -489,23 +530,41 @@ class Character {
 
   public static function getCharacterById($id) {
     $checkStatement = self::$db->prepareStatement(
-      "SELECT ch.*, cl.name AS className, cl.color AS classColor, cl.icon AS classIcon, ra.name AS raceName, sp.name AS specName, sp.icon AS specIcon
+      "SELECT ch.*, ci.id AS instanceid, ci.activeSpec AS activeSpec, ci.ilvl AS ilvl, ci.ilvle AS ilvle, ci.health AS health, ci.str AS str,
+      ci.agi AS agi, ci.`int` AS `int`, ci.sta AS sta, ci.crit AS crit, ci.critRating AS critRating, ci.haste AS haste,
+      ci.hasteRating AS hasteRating, ci.mastery AS mastery, ci.masteryRating AS masteryRating, ci.versatility AS versatility, ci.versatilityBonus AS versatilityBonus
       FROM `character` ch
-      INNER JOIN class cl ON ch.class=cl.id
-      INNER JOIN race ra ON ch.race=ra.id
-      INNER JOIN spec sp ON ch.activeSpec=sp.id
-      WHERE ch.id=:id;"
+      INNER JOIN charinstance ci ON ch.id=ci.charid
+      WHERE ch.id=:id AND ci.main=TRUE;"
     );
     $checkStatement->bindParam(':id', $id);
     if(!$checkStatement->execute()) {
       return false;
     }
     $char = $checkStatement->fetch(PDO::FETCH_ASSOC);
-    $char['thumbnail'] = Cacher::getCharacterThumbnailUrl($char['thumbnail']);
+    //$char['thumbnail'] = Cacher::getCharacterThumbnailUrl($char['thumbnail']);
     return($char);
   }
 
-  private static function getCharacterItems($id) {
+  public static function getCharacterByInstanceId($id) {
+    $checkStatement = self::$db->prepareStatement(
+      "SELECT ch.*, ci.id AS instanceid, ci.activeSpec AS activeSpec, ci.ilvl AS ilvl, ci.ilvle AS ilvle, ci.health AS health, ci.str AS str,
+      ci.agi AS agi, ci.`int` AS `int`, ci.sta AS sta, ci.crit AS crit, ci.critRating AS critRating, ci.haste AS haste,
+      ci.hasteRating AS hasteRating, ci.mastery AS mastery, ci.masteryRating AS masteryRating, ci.versatility AS versatility, ci.versatilityBonus AS versatilityBonus
+      FROM charinstance ci
+      INNER JOIN `character` ch ON ch.id=ci.charid
+      WHERE ci.id=:id;"
+    );
+    $checkStatement->bindParam(':id', $id);
+    if(!$checkStatement->execute()) {
+      return false;
+    }
+    $char = $checkStatement->fetch(PDO::FETCH_ASSOC);
+    //$char['thumbnail'] = Cacher::getCharacterThumbnailUrl($char['thumbnail']);
+    return($char);
+  }
+
+  private static function getCharacterItems($id, $instance=false) {
     $itemStatement = self::$db->prepareStatement(
       "SELECT chit.id AS chitId, it.id AS id, it.name AS name, it.icon AS icon, isl.id AS slotNum, isl.name AS slot, iq.name AS quality, iq.color AS qualityColor,
       chit.ilvl AS ilvl, chit.setList AS setList, chit.transmogItem AS transmogItem, chit.bonusList AS bonusList, chit.enchant AS enchant
@@ -542,7 +601,7 @@ class Character {
   }
 
   private static function getCharacterSpecs($id, $class) {
-    $result = WoWDBUtil::getClassSpecs($class);
+    $result = WoWDBUtil::getClassSpecs(self::$db, $class);
     $specIndices = array();
     for($i = 0; $i < count($result); $i++) {
       $result[$i]['talents'] = array();

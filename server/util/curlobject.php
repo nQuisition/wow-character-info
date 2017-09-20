@@ -5,18 +5,10 @@ include_once __DIR__.'/../config/config.php';
 use \Config\Config;
 
 class CurlObject {
-  private static $curlobject = null;
   private $curl = null;
 
-  private function __construct() {
+  public function __construct() {
 
-  }
-
-  public static function getCurlObject() {
-    if(!isset(self::$curlobject)) {
-      self::$curlobject = new CurlObject();
-    }
-    return self::$curlobject;
   }
 
   public function init($reconnect=false) {
@@ -29,8 +21,8 @@ class CurlObject {
     $this->curl=curl_init();
   }
 
-  public function curlCharacter($name, $realm, $region) {
-    curl_setopt($this->curl, CURLOPT_URL, 'https://eu.api.battle.net/wow/character/'.$realm.'/'.$name.'?fields=stats,items,talents&locale=en_GB&apikey='.Config::BNET_API_KEY);
+  private function curlURL($url) {
+    curl_setopt($this->curl, CURLOPT_URL, $url);
     curl_setopt($this->curl, CURLOPT_CONNECTTIMEOUT, 2);
     curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, true);
     $buffer = curl_exec($this->curl);
@@ -42,17 +34,30 @@ class CurlObject {
     return json_decode($buffer, true);
   }
 
+  public function curlCharacter($name, $realm, $region) {
+    return $this->curlURL('https://eu.api.battle.net/wow/character/'.$realm.'/'.$name.'?fields=stats,items,talents&locale=en_GB&apikey='.Config::BNET_API_KEY);
+  }
+
   public function curlTalents() {
-    curl_setopt($this->curl, CURLOPT_URL, 'https://eu.api.battle.net/wow/data/talents?locale=en_GB&apikey='.Config::BNET_API_KEY);
-    curl_setopt($this->curl, CURLOPT_CONNECTTIMEOUT, 2);
-    curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, true);
-    $buffer = curl_exec($this->curl);
+    return $this->curlURL('https://eu.api.battle.net/wow/data/talents?locale=en_GB&apikey='.Config::BNET_API_KEY);
+  }
 
-    if (empty($buffer)) {
-      return false;
-    }
+  public function curlWCLZones() {
+    return $this->curlURL('https://www.warcraftlogs.com:443/v1/zones?api_key='.Config::WCL_API_KEY);
+  }
 
-    return json_decode($buffer, true);
+  public function curlWCLReports($startTime=0) {
+    return $this->curlURL('https://www.warcraftlogs.com:443/v1/reports/guild/'
+        .Config::GUILD_NAME.'/'.Config::GUILD_REALM.'/'.Config::GUILD_REGION.'?start='.$startTime.'&api_key='.Config::WCL_API_KEY);
+  }
+
+  public function curlWCLReport($reportId) {
+    return $this->curlURL('https://www.warcraftlogs.com:443/v1/report/tables/'
+        .$view.'/'.$reportId.'?start='.$start.'&end='.$end.'&api_key='.Config::WCL_API_KEY);
+  }
+
+  public function curlWCLFightTable($reportId, $start, $end, $view) {
+    return $this->curlURL('https://www.warcraftlogs.com:443/v1/report/fights/'.$reportId.'?api_key='.Config::WCL_API_KEY);
   }
 
   public function closeConnection() {

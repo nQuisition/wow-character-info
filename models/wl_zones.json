@@ -1,0 +1,230 @@
+[
+  //..
+  //Not interesting zones..
+  {
+    "id": 13,
+    "name": "Tomb of Sargeras",
+    "frozen": false,
+    "encounters": [
+      {
+        "id": 2032,
+        "name": "Goroth"
+      },
+      {
+        "id": 2048,
+        "name": "Demonic Inquisition"
+      },
+      {
+        "id": 2036,
+        "name": "Harjatan"
+      },
+      {
+        "id": 2037,
+        "name": "Mistress Sassz'ine"
+      },
+      {
+        "id": 2050,
+        "name": "Sisters of the Moon"
+      },
+      {
+        "id": 2054,
+        "name": "The Desolate Host"
+      },
+      {
+        "id": 2052,
+        "name": "Maiden of Vigilance"
+      },
+      {
+        "id": 2038,
+        "name": "Fallen Avatar"
+      },
+      {
+        "id": 2051,
+        "name": "Kil'jaeden"
+      }
+    ],
+    "brackets": [
+      {
+        "id": 1,
+        "name": "0-864"
+      },
+      {
+        "id": 2,
+        "name": "865-867"
+      },
+      {
+        "id": 3,
+        "name": "868-870"
+      },
+      {
+        "id": 4,
+        "name": "871-873"
+      },
+      {
+        "id": 5,
+        "name": "874-876"
+      },
+      {
+        "id": 6,
+        "name": "877-879"
+      },
+      {
+        "id": 7,
+        "name": "880-882"
+      },
+      {
+        "id": 8,
+        "name": "883-885"
+      },
+      {
+        "id": 9,
+        "name": "886-888"
+      },
+      {
+        "id": 10,
+        "name": "889-891"
+      },
+      {
+        "id": 11,
+        "name": "892-894"
+      },
+      {
+        "id": 12,
+        "name": "895-897"
+      },
+      {
+        "id": 13,
+        "name": "898-900"
+      },
+      {
+        "id": 14,
+        "name": "901-903"
+      },
+      {
+        "id": 15,
+        "name": "904-906"
+      },
+      {
+        "id": 16,
+        "name": "907-909"
+      },
+      {
+        "id": 17,
+        "name": "910-912"
+      },
+      {
+        "id": 18,
+        "name": "913-915"
+      },
+      {
+        "id": 19,
+        "name": "916-918"
+      },
+      {
+        "id": 20,
+        "name": "919-921"
+      },
+      {
+        "id": 21,
+        "name": "922-924"
+      },
+      {
+        "id": 22,
+        "name": "925-927"
+      },
+      {
+        "id": 23,
+        "name": "928-930"
+      },
+      {
+        "id": 24,
+        "name": "931-933"
+      },
+      {
+        "id": 25,
+        "name": "934-936"
+      },
+      {
+        "id": 26,
+        "name": "937-939"
+      },
+      {
+        "id": 27,
+        "name": "940-942"
+      },
+      {
+        "id": 28,
+        "name": "943-945"
+      },
+      {
+        "id": 29,
+        "name": "946-948"
+      },
+      {
+        "id": 30,
+        "name": "949-951"
+      },
+      {
+        "id": 31,
+        "name": "952-954"
+      },
+      {
+        "id": 32,
+        "name": "955+"
+      }
+    ]
+  },
+  //..
+  //..
+  {
+    "id": 17,
+    "name": "Antorus, The Burning Throne",
+    "frozen": true,
+    "encounters": [
+      {
+        "id": 2076,
+        "name": "Garothi Worldbreaker"
+      },
+      {
+        "id": 2074,
+        "name": "Hounds of Sargeras"
+      },
+      {
+        "id": 2070,
+        "name": "War Council"
+      },
+      {
+        "id": 2075,
+        "name": "Eonar, the Lifebinder"
+      },
+      {
+        "id": 2064,
+        "name": "Portal Keeper Hasabel"
+      },
+      {
+        "id": 2082,
+        "name": "Imonar the Soulhunter"
+      },
+      {
+        "id": 2088,
+        "name": "Kin'garoth"
+      },
+      {
+        "id": 2069,
+        "name": "Varimathras"
+      },
+      {
+        "id": 2073,
+        "name": "The Coven of Shivarra"
+      },
+      {
+        "id": 2063,
+        "name": "Aggramar"
+      },
+      {
+        "id": 2092,
+        "name": "Argus the Unmaker"
+      }
+    ]
+  },
+]

@@ -5,19 +5,11 @@ include_once __DIR__.'/../config/config.php';
 use \Config\Config, \PDO, \PDOException;
 
 class DBObject {
-  private static $dbobject = null;
   private $conn = null;
   private $inTransaction = false;
 
-  private function __construct() {
+  public function __construct() {
 
-  }
-
-  public static function getDBObject() {
-    if(!isset(self::$dbobject)) {
-      self::$dbobject = new DBObject();
-    }
-    return self::$dbobject;
   }
 
   public function establishConnection($reconnect=false) {
